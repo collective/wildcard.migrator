@@ -9,7 +9,13 @@ class ObjectPropertiesMigrator(BaseMigrator):
 
     @classmethod
     def _get(kls, obj):
-        structure = convertListOfDicts(obj._properties)
+        try:
+            structure = convertListOfDicts(obj._properties)
+        except AttributeError:
+            return {
+                'structure': {},
+                'values': []
+            }
         values = obj.propertyItems()
         return {
             'structure': structure,

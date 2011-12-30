@@ -34,12 +34,29 @@ _portal_type_conversions = {
 }
 
 
+def getPT(obj):
+    pt = aq_base(obj).portal_type
+    return _portal_type_conversions.get(pt, pt)
+
+
+def createObject(parent, _type, id):
+    _type = _portal_type_conversions.get(_type, _type)
+    pt = getToolByName(parent, 'portal_types')
+    type_info = pt.getTypeInfo(_type)
+    ob = type_info._constructInstance(parent, id)
+    # CMFCore compatibility
+    if hasattr(type_info, '_finishConstruction'):
+        return type_info._finishConstruction(ob)
+    else:
+        return ob
+
+
 class FolderContentsMigrator(BaseMigrator):
     title = "Folder Contents"
     _type = 'folder'
 
     def get(self):
-        return [{'id': o.getId(), 'portal_type': aq_base(o).portal_type} for o in
+        return [{'id': o.getId(), 'portal_type': getPT(o)} for o in
                     self.obj.objectValues() if IBaseObject.providedBy(o)]
 
     def set(self, values):
@@ -47,8 +64,9 @@ class FolderContentsMigrator(BaseMigrator):
             id = str(data['id'])
             portal_type = str(data['portal_type'])
             if id not in self.obj.objectIds():
-                self.obj.invokeFactory(portal_type, id)
-            yield self.obj[id]
+                yield createObject(self.obj, portal_type, id)
+            else:
+                yield self.obj[id]
 addMigrator(FolderContentsMigrator)
 
 
@@ -371,10 +389,9 @@ class ContentTouchMigrator(BaseMigrator):
             parentpath = '/'.join(path.split('/')[:-1])
             parent = self.site.restrictedTraverse(parentpath)
             pt = str(pt)
-            parent.invokeFactory(pt, id)
-            objparent = parent[id]
+            objparent = createObject(parent, pt, id)
         if objid not in objparent.objectIds():
-            objparent.invokeFactory(str(data['portal_type']), objid)
+            createObject(objparent, str(data['portal_type']), objid)
         return objparent[objid]
 addMigrator(ContentTouchMigrator)
 

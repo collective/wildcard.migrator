@@ -27,6 +27,8 @@ class ObjectPropertiesMigrator(BaseMigrator):
         structure = value['structure']
         values = value['values']
 
+        if not structure or not values:
+            return
         existing_structure = convertListOfDicts(obj._properties)
         for id, struct in structure.items():
             if id not in existing_structure:

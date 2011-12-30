@@ -5,7 +5,10 @@ from wildcard.migrator.archetypes import FieldMigrator
 from wildcard.migrator.properties import ObjectPropertiesMigrator
 from wildcard.migrator.workflow import WorkflowStateMigrator
 from wildcard.migrator.workflow import WorkflowHistoryMigrator
-from Products.Archetypes.interfaces.base import IBaseObject
+try:
+    from Products.Archetypes.interfaces._base import IBaseObject
+except:
+    from Products.Archetypes.interfaces.base import IBaseObject
 from zope.annotation.interfaces import IAnnotations
 from persistent.dict import PersistentDict
 from Acquisition import aq_base

@@ -48,7 +48,7 @@ from plone.app.viewletmanager.exportimport.storage import \
 from Products.CMFCore.exportimport.mailhost import exportMailHost
 from Products.CMFCore.exportimport.mailhost import importMailHost
 from Products.GenericSetup.rolemap import exportRolemap
-from Products.GenericSetup.rolemap import importRolemap
+from wildcard.migrator.monkey import importRolemap
 from Products.ResourceRegistries.exportimport.jsregistry import \
     exportJSRegistry
 from Products.ResourceRegistries.exportimport.jsregistry import \

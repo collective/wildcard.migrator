@@ -334,6 +334,7 @@ def getParentsData(obj):
     while not IPloneSiteRoot.providedBy(obj):
         path = '/'.join(obj.getPhysicalPath())[len(sitepath) + 1:]
         pt = aq_base(obj).portal_type
+        pt = _portal_type_conversions.get(pt, pt)
         parents.append((path, pt))
         obj = aq_parent(aq_inner(obj))
 

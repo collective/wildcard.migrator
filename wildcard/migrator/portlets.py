@@ -238,6 +238,8 @@ class PortletsXMLAdapter(XMLAdapterBase):
         for manager_name, manager in getUtilitiesFor(IPortletManager):
             mapping = queryMultiAdapter((self.object, manager),
                                         IPortletAssignmentMapping)
+            if not mapping:
+                continue
             mapping = mapping.__of__(self.object)
             extractMapping(manager_name, CONTEXT_CATEGORY,
                            self.objectpath, mapping)

@@ -39,7 +39,7 @@ class FolderContentsMigrator(BaseMigrator):
     _type = 'folder'
 
     def get(self):
-        return [{'id': o.getId(), 'portal_type': o.portal_type} for o in
+        return [{'id': o.getId(), 'portal_type': aq_base(o).portal_type} for o in
                     self.obj.objectValues() if IBaseObject.providedBy(o)]
 
     def set(self, values):
@@ -77,7 +77,10 @@ class AnnotationsMigrator(BaseMigrator):
     @classmethod
     def _get(kls, obj):
         data = {}
-        annotations = IAnnotations(obj)
+        try:
+            annotations = IAnnotations(obj)
+        except TypeError:
+            return {}
         for key, annotation in annotations.items():
             if key.startswith('Archetypes.storage') or \
                     key in _skipped_annotations or \
@@ -89,7 +92,10 @@ class AnnotationsMigrator(BaseMigrator):
 
     @classmethod
     def _set(kls, obj, data):
-        annotations = IAnnotations(obj)
+        try:
+            annotations = IAnnotations(obj)
+        except TypeError:
+            return
         for key, annotation in data.items():
             if type(annotation) == dict:
                 annotation = PersistentDict(annotation)
@@ -327,7 +333,7 @@ def getParentsData(obj):
     obj = aq_parent(aq_inner(obj))
     while not IPloneSiteRoot.providedBy(obj):
         path = '/'.join(obj.getPhysicalPath())[len(sitepath) + 1:]
-        pt = obj.portal_type
+        pt = aq_base(obj).portal_type
         parents.append((path, pt))
         obj = aq_parent(aq_inner(obj))
 
@@ -344,7 +350,7 @@ class ContentTouchMigrator(BaseMigrator):
 
     @classmethod
     def _get(kls, obj):
-        pt = obj.portal_type
+        pt = aq_base(obj).portal_type
         return {
             'id': obj.getId(),
             'parents': getParentsData(obj),
@@ -378,7 +384,7 @@ class ContentObjectMigrator(BaseMigrator):
 
     @classmethod
     def _get(kls, obj, add_versions=True):
-        pt = obj.portal_type
+        pt = aq_base(obj).portal_type
         data = {
             'fieldvalues': FieldMigrator._get(obj),
             'id': obj.getId(),

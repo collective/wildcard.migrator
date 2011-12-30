@@ -33,7 +33,7 @@ class WorkflowStateMigrator(BaseMigrator):
                                             status['review_state']:
                 workflowTool = getToolByName(obj, "portal_workflow")
                 return workflowTool.doActionFor(obj,
-                    status['action'], comment=status['comment'])
+                    status['action'], comment=status.get('comment', ''))
 
     def set(self, state, action):
         return self._set(self.obj, state, action)

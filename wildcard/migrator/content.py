@@ -270,7 +270,7 @@ class SyndicationMigrator(BaseMigrator):
             portal_syndication.enableSyndication(obj)
 
         synInfo = obj.syndication_information
-        synInfo.syUpdatePeriod = info['synInfo']
+        synInfo.syUpdatePeriod = info['syUpdatePeriod']
         synInfo.syUpdateFrequency = info['syUpdateFrequency']
         synInfo.syUpdateBase = info['syUpdateBase']
         synInfo.max_items = info['max_items']

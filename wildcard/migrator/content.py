@@ -401,16 +401,16 @@ class ContentObjectMigrator(BaseMigrator):
 
     @classmethod
     def _set(kls, obj, value):
-        FieldMigrator._set(obj, value.pop('fieldvalues'))
-        ObjectPropertiesMigrator._set(obj, value.pop('properties'))
-        WorkflowStateMigrator._set(obj, value.pop('workflow'))
-        WorkflowHistoryMigrator._set(obj, value.pop('workflow_history'))
-        OwnerMigrator._set(obj, value.pop('owner'))
-        AnnotationsMigrator._set(obj, value.pop('annotations'))
-        MarkerInterfacesMigrator._set(obj, value.pop('marker_interfaces'))
-        LocalRolesMigrator._set(obj, value.pop('local_roles'))
-        VersionsMigrator._set(obj, value.pop('versions', []))
-        SyndicationMigrator._set(obj, value.pop('syndication', {}))
-        PortletsMigrator._set(obj, value.pop('portlets', None))
+        FieldMigrator._set(obj, value.get('fieldvalues', []))
+        ObjectPropertiesMigrator._set(obj, value.get('properties', []))
+        WorkflowStateMigrator._set(obj, value.get('workflow', ''))
+        WorkflowHistoryMigrator._set(obj, value.get('workflow_history', []))
+        OwnerMigrator._set(obj, value.get('owner', 'admin'))
+        AnnotationsMigrator._set(obj, value.get('annotations', []))
+        MarkerInterfacesMigrator._set(obj, value.get('marker_interfaces', []))
+        LocalRolesMigrator._set(obj, value.get('local_roles', []))
+        VersionsMigrator._set(obj, value.get('versions', []))
+        SyndicationMigrator._set(obj, value.get('syndication', {}))
+        PortletsMigrator._set(obj, value.get('portlets', None))
         obj._p_changed = 1
 addMigrator(ContentObjectMigrator)

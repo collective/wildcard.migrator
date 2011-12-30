@@ -28,4 +28,6 @@ class FieldMigrator(BaseMigrator):
             if name in _skipped_fields:
                 continue
             field = obj.getField(name)
+            if not field:
+                continue
             field.set(obj, value['value'], **value['extras'])

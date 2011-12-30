@@ -69,10 +69,12 @@ def importRolemap( context ):
         site.__ac_roles__ = tuple( immediate_roles )
 
         for permission in rolemap_info[ 'permissions' ]:
-
-            site.manage_permission( permission[ 'name' ]
+            try:
+                site.manage_permission( permission[ 'name' ]
                                   , permission.get('roles', [])
                                   , permission[ 'acquire' ]
                                   )
+            except ValueError:
+                pass  # do not bother importing invalid ones.
 
     logger.info('Role / permission map imported.')

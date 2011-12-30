@@ -9,6 +9,10 @@ from StringIO import StringIO
 import base64
 from persistent.dict import PersistentDict
 from zope.app.component.hooks import getSite
+try:
+    from Persistence.mapping import PersistentMapping
+except:
+    from persistent.mapping import PersistentMapping
 
 
 _filedata_marker = 'filedata://'
@@ -23,7 +27,7 @@ def customhandler(obj):
         return obj.ISO8601()
     elif isinstance(obj, BlobWrapper):
         return _filedata_marker + base64.b64encode(obj.data)
-    elif isinstance(obj, PersistentDict):
+    elif isinstance(obj, PersistentDict) or isinstance(obj, PersistentMapping):
         return dict(obj.copy())
     elif hasattr(obj, 'UID'):
         site_path = '/'.join(getSite().getPhysicalPath())

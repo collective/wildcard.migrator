@@ -323,7 +323,7 @@ def _getUids(value):
 
 def _findUids(data):
     uids = []
-    if isinstance(data, dict):
+    if type(data) in (dict, PersistentDict, PersistentMapping):
         for key, value in data.items():
             if isinstance(value, basestring):
                 uids += _getUids(value)

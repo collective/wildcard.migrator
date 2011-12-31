@@ -26,6 +26,12 @@ from zope.app.component.hooks import getSite
 import re
 from Products.CMFPlone.interfaces.siteroot import IPloneSiteRoot
 from wildcard.migrator.portlets import PortletsMigrator
+from persistent.dict import PersistentDict
+from persistent.list import PersistentList
+try:
+    from Persistence.mapping import PersistentMapping
+except:
+    from persistent.mapping import PersistentMapping
 
 
 resolveuid_re = re.compile('resolveuid/([a-zA-Z0-9\-]*)\"')
@@ -321,13 +327,15 @@ def _findUids(data):
         for key, value in data.items():
             if isinstance(value, basestring):
                 uids += _getUids(value)
-            elif type(value) in (dict, list, tuple, set):
-                uids += findUids(value)
-    elif type(data) in (list, tuple, set):
+            elif type(value) in (dict, list, tuple, set, PersistentList,
+                            PersistentDict, PersistentMapping):
+                uids += _findUids(value)
+    elif type(data) in (list, tuple, set, PersistentList):
         for value in data:
             if isinstance(value, basestring):
                 uids += _getUids(value)
-            elif type(value) in (dict, list, tuple, set):
+            elif type(value) in (dict, list, tuple, set, PersistentList,
+                            PersistentDict, PersistentMapping):
                 uids += _findUids(value)
     return uids
 

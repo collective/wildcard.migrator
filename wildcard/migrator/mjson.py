@@ -13,6 +13,7 @@ try:
     from Persistence.mapping import PersistentMapping
 except:
     from persistent.mapping import PersistentMapping
+from persistent.list import PersistentList
 
 
 _filedata_marker = 'filedata://'
@@ -29,6 +30,8 @@ def customhandler(obj):
         return _filedata_marker + base64.b64encode(obj.data)
     elif isinstance(obj, PersistentDict) or isinstance(obj, PersistentMapping):
         return dict(obj.copy())
+    elif isinstance(obj, PersistentList):
+        return [i for i in obj]
     elif hasattr(obj, 'UID'):
         site_path = '/'.join(getSite().getPhysicalPath())
         return '%s%s%s%s' % (

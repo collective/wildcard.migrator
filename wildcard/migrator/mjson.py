@@ -14,7 +14,11 @@ try:
 except:
     from persistent.mapping import PersistentMapping
 from persistent.list import PersistentList
-
+from Products.Archetypes.Field import Image
+try:
+    from Products.Archetypes.interfaces._base import IBaseObject
+except:
+    from Products.Archetypes.interfaces.base import IBaseObject
 
 _filedata_marker = 'filedata://'
 _uid_marker = 'uid://'
@@ -26,19 +30,20 @@ def customhandler(obj):
         return DateTime(obj).ISO8601()
     elif isinstance(obj, DateTime):
         return obj.ISO8601()
-    elif isinstance(obj, BlobWrapper):
+    elif isinstance(obj, BlobWrapper) or isinstance(obj, Image):
         return _filedata_marker + base64.b64encode(obj.data)
     elif isinstance(obj, PersistentDict) or isinstance(obj, PersistentMapping):
         return dict(obj.copy())
     elif isinstance(obj, PersistentList):
         return [i for i in obj]
     elif hasattr(obj, 'UID'):
-        site_path = '/'.join(getSite().getPhysicalPath())
-        return '%s%s%s%s' % (
-            _uid_marker, obj.UID(),
-            _uid_separator,
-            '/'.join(obj.getPhysicalPath())[len(site_path) + 1:]
-        )
+        if IBaseObject.providedBy(obj):
+            site_path = '/'.join(getSite().getPhysicalPath())
+            return '%s%s%s%s' % (
+                _uid_marker, obj.UID(),
+                _uid_separator,
+                '/'.join(obj.getPhysicalPath())[len(site_path) + 1:]
+            )
     return obj
 
 

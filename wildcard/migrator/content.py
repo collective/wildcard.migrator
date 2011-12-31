@@ -388,16 +388,16 @@ class ContentTouchMigrator(BaseMigrator):
         parents = data['parents']
         objid = str(data['id'])
         objparent = self.site
-        for pt, path in parents:
+        for path, pt in parents:
             path = str(path)
             objparent = self.site.restrictedTraverse(path, None)
             if objparent:
                 continue
             id = str(path.split('/')[-1])
             parentpath = '/'.join(path.split('/')[:-1])
-            parent = self.site.restrictedTraverse(parentpath)
+            objparent = self.site.restrictedTraverse(parentpath)
             pt = str(pt)
-            objparent = createObject(parent, pt, id)
+            objparent = createObject(objparent, pt, id)
         if objid not in objparent.objectIds():
             createObject(objparent, str(data['portal_type']), objid)
         return objparent[objid]

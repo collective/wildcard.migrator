@@ -28,7 +28,7 @@ from Products.CMFPlone.interfaces.siteroot import IPloneSiteRoot
 from wildcard.migrator.portlets import PortletsMigrator
 
 
-resolveuid_re = re.compile('resolveuid/([^/]*)/?(.*)\"')
+resolveuid_re = re.compile('resolveuid/([a-zA-Z0-9\-]*)\"')
 _portal_type_conversions = {
     'Large Plone Folder': 'Folder'
 }
@@ -311,7 +311,7 @@ def _getUids(value):
         uids.append(json.decodeUid(value))
     elif 'resolveuid/' in value:
         for match in resolveuid_re.findall(value):
-            uids.append(match[0])
+            uids.append(match)
     return uids
 
 

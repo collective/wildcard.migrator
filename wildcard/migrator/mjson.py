@@ -4,22 +4,14 @@ except ImportError:
     import simplejson as json
 from datetime import datetime
 from DateTime import DateTime
-from plone.app.blob.field import BlobWrapper
 from StringIO import StringIO
 import base64
 from persistent.dict import PersistentDict
-from zope.app.component.hooks import getSite
 try:
     from Persistence.mapping import PersistentMapping
 except:
     from persistent.mapping import PersistentMapping
 from persistent.list import PersistentList
-from Products.Archetypes.Field import Image
-try:
-    from Products.Archetypes.interfaces._base import IBaseObject
-except:
-    from Products.Archetypes.interfaces.base import IBaseObject
-from Products.Archetypes.BaseUnit import BaseUnit
 
 _filedata_marker = 'filedata://'
 _uid_marker = 'uid://'
@@ -31,22 +23,10 @@ def customhandler(obj):
         return DateTime(obj).ISO8601()
     elif isinstance(obj, DateTime):
         return obj.ISO8601()
-    elif isinstance(obj, BlobWrapper) or isinstance(obj, Image):
-        return _filedata_marker + base64.b64encode(obj.data)
     elif isinstance(obj, PersistentDict) or isinstance(obj, PersistentMapping):
         return dict(obj.copy())
     elif isinstance(obj, PersistentList):
         return [i for i in obj]
-    elif isinstance(obj, BaseUnit):
-        return obj.getRaw()
-    elif hasattr(obj, 'UID'):
-        if IBaseObject.providedBy(obj):
-            site_path = '/'.join(getSite().getPhysicalPath())
-            return '%s%s%s%s' % (
-                _uid_marker, obj.UID(),
-                _uid_separator,
-                '/'.join(obj.getPhysicalPath())[len(site_path) + 1:]
-            )
     return obj
 
 
@@ -84,8 +64,4 @@ def loads(data):
 
 
 def dumps(data):
-    try:
-        return json.dumps(data, default=customhandler)
-    except:
-        import pdb; pdb.set_trace()
-        raise
+    return json.dumps(data, default=customhandler)

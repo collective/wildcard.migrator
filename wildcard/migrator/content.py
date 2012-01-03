@@ -350,7 +350,10 @@ def findUids(data):
         if type(uid) in (list, set, tuple):
             uid, path = uid
         else:
-            path = uid_cat(UID=uid)[0].getPath()
+            res = uid_cat(UID=uid)
+            if len(res) == 0:
+                continue
+            path = res[0].getPath()
         uidpaths.append((uid, path))
     return uidpaths
 
@@ -456,8 +459,8 @@ class ContentObjectMigrator(BaseMigrator):
             data['versions'] = VersionsMigrator._get(obj)
             data['portlets'] = PortletsMigrator._get(obj)
             data['redirects'] = RedirectorMigrator._get(obj)
-        uids = findUids(data)
-        data['uids'] = uids
+            uids = findUids(data)
+            data['uids'] = uids
         return data
 
     @classmethod

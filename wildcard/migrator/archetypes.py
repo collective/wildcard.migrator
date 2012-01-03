@@ -1,6 +1,36 @@
 from wildcard.migrator import BaseMigrator
+from plone.app.blob.field import BlobWrapper
+from wildcard.migrator import mjson as json
+from Products.Archetypes.Field import Image
+try:
+    from Products.Archetypes.interfaces._base import IBaseObject
+except:
+    from Products.Archetypes.interfaces.base import IBaseObject
+from Products.Archetypes.BaseUnit import BaseUnit
+import base64
+from zope.app.component.hooks import getSite
+from persistent.list import PersistentList
+
 
 _skipped_fields = ['id']
+
+
+def _convert(value):
+    if isinstance(value, BlobWrapper) or isinstance(value, Image):
+        return json._filedata_marker + base64.b64encode(value.data)
+    elif isinstance(value, BaseUnit):
+        return value.getRaw()
+    elif hasattr(value, 'UID'):
+        if IBaseObject.providedBy(value):
+            site_path = '/'.join(getSite().getPhysicalPath())
+            return '%s%s%s%s' % (
+                json._uid_marker, value.UID(),
+                json._uid_separator,
+                '/'.join(value.getPhysicalPath())[len(site_path) + 1:]
+            )
+    elif type(value) in (list, tuple, set, PersistentList):
+        return [_convert(v) for v in value]
+    return value
 
 
 class FieldMigrator(BaseMigrator):
@@ -17,7 +47,7 @@ class FieldMigrator(BaseMigrator):
             else:
                 extras = {}
             fields[field.__name__] = {
-                'value': field.get(obj, raw=True),
+                'value': _convert(field.get(obj, raw=True)),
                 'extras': extras
             }
         return fields

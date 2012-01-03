@@ -26,11 +26,11 @@ class BaseMigrator(object):
         return self._set(self.obj, value)
 
 
-_migrators = {}
+_migrators = []
 
 
 def addMigrator(kls):
-    _migrators[kls.title] = kls
+    _migrators.append(kls)
 
 
 def getMigrators():
@@ -38,11 +38,13 @@ def getMigrators():
 
 
 def getMigrator(title):
-    return _migrators[title]
+    for mgr in _migrators:
+        if mgr.title == title:
+            return mgr
 
 
 def getMigratorsOfType(_type):
-    for kls in _migrators.values():
+    for kls in _migrators:
         if kls._type == _type:
             yield kls
 

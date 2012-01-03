@@ -17,7 +17,10 @@ _skipped_fields = ['id']
 
 def _convert(value):
     if isinstance(value, BlobWrapper) or isinstance(value, Image):
-        return json._filedata_marker + base64.b64encode(value.data)
+        try:
+            return json._filedata_marker + base64.b64encode(value.data)
+        except TypeError:
+            return json._filedata_marker + base64.b64encode(value.data.data)
     elif isinstance(value, BaseUnit):
         return value.getRaw()
     elif hasattr(value, 'UID'):

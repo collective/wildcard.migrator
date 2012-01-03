@@ -93,7 +93,9 @@ _skipped_annotations = (
     'plone.folder.ordered.pos',  # handled manually
     'plone.contentrules.localassignments',  # handled through GS
     'plone.locking',
-    'vice.outbound.feedconfig.FeedConfigs'  # let's remove this terrible product
+    # let's remove this terrible product
+    'vice.outbound.feedconfig.FeedConfigs',
+    'htmlpreview'
 )
 
 

@@ -395,12 +395,12 @@ class ContentTouchMigrator(BaseMigrator):
         objparent = self.site
         for path, pt in parents:
             path = str(path)
-            objparent = self.site.restrictedTraverse(path, None)
-            if objparent:
-                continue
             id = str(path.split('/')[-1])
-            parentpath = '/'.join(path.split('/')[:-1])
-            objparent = self.site.restrictedTraverse(parentpath)
+            try:
+                objparent = objparent[id]
+                continue  # if we find it, continue on
+            except KeyError:
+                pass  # otherwise, create the object
             pt = str(pt)
             objparent = createObject(objparent, pt, id)
         if objid not in objparent.objectIds():

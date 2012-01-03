@@ -29,11 +29,23 @@ class WorkflowStateMigrator(BaseMigrator):
     def _set(kls, obj, status):
         if status:
             currentstatus = getWorkflowStatus(obj)
-            if status and currentstatus['review_state'] != \
-                                            status['review_state']:
-                workflowTool = getToolByName(obj, "portal_workflow")
-                return workflowTool.doActionFor(obj,
-                    status['action'], comment=status.get('comment', ''))
+            old_state = currentstatus['review_state']
+            new_state = status and status['review_state'] or None
+            if status and old_state != new_state:
+                portal_workflow = getToolByName(obj, 'portal_workflow')
+                chain = portal_workflow.getChainFor(obj)[0]
+
+                if chain[0] == '(Default)':
+                    chain = portal_workflow.getDefaultChain()
+
+                workflow = portal_workflow[chain]
+                portal_workflow.setStatusOf(chain[0], obj, status)
+                auto_transition = workflow._findAutomaticTransition(obj,
+                    workflow._getWorkflowStateOf(obj))
+                if auto_transition is not None:
+                    workflow._changeStateOf(obj, auto_transition)
+                else:
+                    workflow.updateRoleMappingsFor(obj)
 
     def set(self, state, action):
         return self._set(self.obj, state, action)

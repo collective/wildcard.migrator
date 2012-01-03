@@ -12,6 +12,7 @@ try:
 except:
     from persistent.mapping import PersistentMapping
 from persistent.list import PersistentList
+from BTrees.OOBTree import OOBTree
 
 _filedata_marker = 'filedata://'
 _uid_marker = 'uid://'
@@ -23,7 +24,9 @@ def customhandler(obj):
         return DateTime(obj).ISO8601()
     elif isinstance(obj, DateTime):
         return obj.ISO8601()
-    elif isinstance(obj, PersistentDict) or isinstance(obj, PersistentMapping):
+    elif isinstance(obj, PersistentDict) or \
+            isinstance(obj, PersistentMapping) or \
+            isinstance(obj, OOBTree):
         return dict(obj.copy())
     elif isinstance(obj, PersistentList):
         return [i for i in obj]

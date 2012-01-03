@@ -321,5 +321,5 @@ class PortletsMigrator(BaseMigrator):
     def _set(self, obj, xml):
         if xml:
             exporter = PortletsXMLAdapter(obj)
-            exporter.body = xml
+            exporter.body = xml.encode('utf-8')
 addMigrator(PortletsMigrator)

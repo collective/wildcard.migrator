@@ -31,6 +31,7 @@ try:
     from Persistence.mapping import PersistentMapping
 except:
     from persistent.mapping import PersistentMapping
+from BTrees.OOBTree import OOBTree
 from plone.app.redirector.interfaces import IRedirectionStorage
 from zope.component import queryUtility
 
@@ -325,19 +326,19 @@ def _getUids(value):
 
 def _findUids(data):
     uids = []
-    if type(data) in (dict, PersistentDict, PersistentMapping):
+    if type(data) in (dict, PersistentDict, PersistentMapping, OOBTree):
         for key, value in data.items():
             if isinstance(value, basestring):
                 uids += _getUids(value)
             elif type(value) in (dict, list, tuple, set, PersistentList,
-                            PersistentDict, PersistentMapping):
+                            PersistentDict, PersistentMapping, OOBTree):
                 uids += _findUids(value)
     elif type(data) in (list, tuple, set, PersistentList):
         for value in data:
             if isinstance(value, basestring):
                 uids += _getUids(value)
             elif type(value) in (dict, list, tuple, set, PersistentList,
-                            PersistentDict, PersistentMapping):
+                            PersistentDict, PersistentMapping, OOBTree):
                 uids += _findUids(value)
     return uids
 

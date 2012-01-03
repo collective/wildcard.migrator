@@ -17,7 +17,7 @@ class FieldMigrator(BaseMigrator):
             else:
                 extras = {}
             fields[field.__name__] = {
-                'value': field.get(obj),
+                'value': field.get(obj, raw=True),
                 'extras': extras
             }
         return fields

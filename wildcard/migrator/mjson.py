@@ -19,6 +19,7 @@ try:
     from Products.Archetypes.interfaces._base import IBaseObject
 except:
     from Products.Archetypes.interfaces.base import IBaseObject
+from Products.Archetypes.BaseUnit import BaseUnit
 
 _filedata_marker = 'filedata://'
 _uid_marker = 'uid://'
@@ -36,6 +37,8 @@ def customhandler(obj):
         return dict(obj.copy())
     elif isinstance(obj, PersistentList):
         return [i for i in obj]
+    elif isinstance(obj, BaseUnit):
+        return obj.getRaw()
     elif hasattr(obj, 'UID'):
         if IBaseObject.providedBy(obj):
             site_path = '/'.join(getSite().getPhysicalPath())

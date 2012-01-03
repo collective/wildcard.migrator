@@ -26,12 +26,13 @@ from zope.app.component.hooks import getSite
 import re
 from Products.CMFPlone.interfaces.siteroot import IPloneSiteRoot
 from wildcard.migrator.portlets import PortletsMigrator
-from persistent.dict import PersistentDict
 from persistent.list import PersistentList
 try:
     from Persistence.mapping import PersistentMapping
 except:
     from persistent.mapping import PersistentMapping
+from plone.app.redirector.interfaces import IRedirectionStorage
+from zope.component import queryUtility
 
 
 resolveuid_re = re.compile('resolveuid/([a-zA-Z0-9\-]*)\"')
@@ -404,6 +405,32 @@ class ContentTouchMigrator(BaseMigrator):
 addMigrator(ContentTouchMigrator)
 
 
+class RedirectorMigrator(BaseMigrator):
+    title = "Redirection"
+    _type = 'object'
+
+    @classmethod
+    def _get(kls, obj):
+        storage = queryUtility(IRedirectionStorage)
+        context_path = "/".join(obj.getPhysicalPath())
+        site = getSite()
+        site_path = '/'.join(site.getPhysicalPath())
+        redirects = []
+        for redirect in storage.redirects(context_path):
+            redirects.append(redirect[len(site_path):])
+        return redirects
+
+    @classmethod
+    def _set(kls, obj, redirects):
+        storage = queryUtility(IRedirectionStorage)
+        site = getSite()
+        site_path = '/'.join(site.getPhysicalPath())
+        context_path = "/".join(obj.getPhysicalPath())
+        for redirect in redirects:
+            storage.add(site_path + redirect, context_path)
+addMigrator(RedirectorMigrator)
+
+
 class ContentObjectMigrator(BaseMigrator):
     title = "Migrate Content Item"
     _type = 'object'
@@ -427,6 +454,7 @@ class ContentObjectMigrator(BaseMigrator):
         if add_versions:
             data['versions'] = VersionsMigrator._get(obj)
             data['portlets'] = PortletsMigrator._get(obj)
+            data['redirects'] = RedirectorMigrator._get(obj)
         uids = findUids(data)
         data['uids'] = uids
         return data
@@ -444,5 +472,6 @@ class ContentObjectMigrator(BaseMigrator):
         VersionsMigrator._set(obj, value.get('versions', []))
         SyndicationMigrator._set(obj, value.get('syndication', {}))
         PortletsMigrator._set(obj, value.get('portlets', None))
+        RedirectorMigrator._set(obj, value.get('redirects', []))
         obj._p_changed = 1
 addMigrator(ContentObjectMigrator)

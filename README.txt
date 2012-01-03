@@ -41,3 +41,16 @@ ToDo
           CONTENT PERMISSIONS
     - CONTENT(redo core content stuff)
         - use manage_getwhatever
+
+
+Manual patches
+--------------
+
+- content rules - convert values to str
+- tinymce exportimport line 140:
+                            if fieldnode.nodeName not in self.attributes[categorynode.nodeName]:
+                               continue
+
+- fix isEditor:
+    python: member and len([r for r in member.getRolesInContext(object) if r in ('Editor', 'Contributor', 'Manager')])
+

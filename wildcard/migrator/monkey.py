@@ -81,6 +81,8 @@ def importRolemap( context ):
 
 
 from zope.schema.interfaces import IFromUnicode
+from zope.schema._bootstrapinterfaces import ConstraintNotSatisfied
+from wildcard.migrator.exceptions import MissingObjectException
 
 
 def from_unicode(self, field, value):
@@ -88,6 +90,12 @@ def from_unicode(self, field, value):
     if IFromUnicode.providedBy(field) or isinstance(field, zope.schema.Bool):
         if type(field) == zope.schema.Int and len(value) == 0:
             return None
-        return field.fromUnicode(value)
+        try:
+            return field.fromUnicode(value)
+        except ConstraintNotSatisfied:
+            if type(field) == zope.schema.Choice and \
+                    zope.schema.interfaces.ISource.providedBy(field.source):
+                raise MissingObjectException(value)
+            raise
     else:
         return self.field_typecast(field, value)

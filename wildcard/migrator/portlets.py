@@ -25,9 +25,6 @@ except ImportError:
 from plone.app.portlets.interfaces import IPortletTypeInterface
 from plone.app.portlets.utils import assignment_mapping_from_key
 
-from plone.app.portlets.exportimport.interfaces import \
-    IPortletAssignmentExportImportHandler
-
 from plone.portlets.constants import USER_CATEGORY
 from plone.portlets.constants import GROUP_CATEGORY
 from plone.portlets.constants import CONTENT_TYPE_CATEGORY
@@ -37,6 +34,13 @@ from zope.app.component.hooks import getSite
 from Products.GenericSetup.utils import PrettyDocument
 from wildcard.migrator import BaseMigrator
 from wildcard.migrator import addMigrator
+from plone.app.portlets.exportimport.portlets import \
+    PropertyPortletAssignmentExportImportHandler as \
+        BasePropertyPortletAssignmentExportImportHandler
+from zope.schema.interfaces import ICollection
+from zope.schema._bootstrapinterfaces import ConstraintNotSatisfied
+from zope.schema import Choice
+from zope.schema.interfaces import ISource
 
 
 def dummyGetId():
@@ -59,6 +63,55 @@ if HAS_BLACKLIST:
                     _getDottedName(IPortletManager),
                     _getDottedName(IPortletManagerRenderer),
                     )
+
+
+class PropertyPortletAssignmentExportImportHandler(
+        BasePropertyPortletAssignmentExportImportHandler):
+
+    def import_node(self, interface, child):
+        """Import a single <property /> node
+        """
+        property_name = child.getAttribute('name')
+
+        field = interface.get(property_name, None)
+        if field is None:
+            return
+
+        field = field.bind(self.assignment)
+        value = None
+
+        # If we have a collection, we need to look at the value_type.
+        # We look for <element>value</element> child nodes and get the
+        # value from there
+        if ICollection.providedBy(field):
+            value_type = field.value_type
+            value = []
+            for element in child.childNodes:
+                if element.nodeName != 'element':
+                    continue
+                element_value = self.extract_text(element)
+                value.append(self.from_unicode(value_type, element_value))
+            value = self.field_typecast(field, value)
+
+        # Otherwise, just get the value of the <property /> node
+        else:
+            value = self.extract_text(child)
+            if not (field.getName() == 'root' and value in ['', '/']):
+                value = self.from_unicode(field, value)
+
+        if field.getName() == 'root' and value in ['', '/']:
+            # these valid values don't pass validation of SearchableTextSourceBinder
+            field.set(self.assignment, value)
+        else:
+            # I don't care if it's raised on a path...
+            try:
+                field.validate(value)
+            except ConstraintNotSatisfied:
+                if type(field) == Choice and ISource.providedBy(field.source):
+                    pass
+                else:
+                    raise
+            field.set(self.assignment, value)
 
 
 class PortletsXMLAdapter(XMLAdapterBase):
@@ -148,7 +201,7 @@ class PortletsXMLAdapter(XMLAdapterBase):
         # 3. Use an adapter to update the portlet settings
 
         portlet_interface = getUtility(IPortletTypeInterface, name=type_)
-        assignment_handler = IPortletAssignmentExportImportHandler(assignment)
+        assignment_handler = PropertyPortletAssignmentExportImportHandler(assignment)
         assignment_handler.import_assignment(portlet_interface, node)
 
         # 4. Handle ordering
@@ -230,7 +283,7 @@ class PortletsXMLAdapter(XMLAdapterBase):
                         visible = settings.get('visible', True)
                         child.setAttribute('visible', repr(visible))
 
-                    handler = IPortletAssignmentExportImportHandler(assignment)
+                    handler = PropertyPortletAssignmentExportImportHandler(assignment)
                     handler.export_assignment(schema, self._doc, child)
                     fragment.appendChild(child)
 

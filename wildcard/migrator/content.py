@@ -257,8 +257,10 @@ class OwnerMigrator(BaseMigrator):
     def _set(kls, obj, owner):
         if owner != obj.getOwner().getId():
             pm = getToolByName(obj, 'portal_membership')
-            user = pm.getMemberById(owner).getUser()
-            obj.changeOwnership(user, recursive=False)
+            member = pm.getMemberById(owner)
+            if member:
+                user = member.getUser()
+                obj.changeOwnership(user, recursive=False)
 addMigrator(OwnerMigrator)
 
 
@@ -317,7 +319,10 @@ addMigrator(SyndicationMigrator)
 def _getUids(value):
     """ must be a string argument"""
     uids = []
-    if value.startswith(json._uid_marker):
+    if value.startswith(json._filedata_marker):
+        # do not check file data
+        return []
+    elif value.startswith(json._uid_marker):
         # converted uid
         uids.append(json.decodeUid(value))
     elif 'resolveuid/' in value:
@@ -462,8 +467,7 @@ class ContentObjectMigrator(BaseMigrator):
             data['versions'] = VersionsMigrator._get(obj)
             data['portlets'] = PortletsMigrator._get(obj)
             data['redirects'] = RedirectorMigrator._get(obj)
-            uids = findUids(data)
-            data['uids'] = uids
+            data['uids'] = findUids(data)
         return data
 
     @classmethod

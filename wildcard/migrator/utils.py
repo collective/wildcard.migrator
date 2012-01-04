@@ -1,3 +1,5 @@
+from plone.app.redirector.interfaces import IRedirectionStorage
+from zope.component import getUtility
 from zope.app.component.hooks import getSite
 
 
@@ -22,7 +24,14 @@ def getMigratorFromRequest(request):
         path = request.get('path')
         context = site.unrestrictedTraverse(str(path), None)
         if not context:
-            context = path
+            redirect_storage = getUtility(IRedirectionStorage)
+            site_path = '/'.join(site.getPhysicalPath())
+            newpath = redirect_storage.get(
+                site_path + '/' + path.lstrip('/'), None)
+            if newpath:
+                context = site.unrestrictedTraverse(newpath, None)
+            if not context:
+                context = path
         migrator = migrator(site, context)
     else:
         migrator = migrator(site)

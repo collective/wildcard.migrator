@@ -13,10 +13,12 @@ except:
     from persistent.mapping import PersistentMapping
 from persistent.list import PersistentList
 from BTrees.OOBTree import OOBTree
+import re
 
 _filedata_marker = 'filedata://'
 _uid_marker = 'uid://'
 _uid_separator = '||||'
+_date_re = re.compile('^[0-9]{4}\-[0-9]{2}\-[0-9]{2}.*$')
 
 
 def customhandler(obj):
@@ -28,7 +30,7 @@ def customhandler(obj):
             isinstance(obj, PersistentMapping) or \
             isinstance(obj, OOBTree):
         return dict(obj.copy())
-    elif isinstance(obj, PersistentList):
+    elif isinstance(obj, PersistentList) or isinstance(obj, set):
         return [i for i in obj]
     return obj
 
@@ -49,10 +51,11 @@ def custom_decoder(d):
             if v.startswith(_filedata_marker):
                 v = StringIO(base64.b64decode(v[len(_filedata_marker):]))
             else:
-                try:
-                    v = DateTime(v)
-                except:
-                    pass
+                if _date_re.match(v):
+                    try:
+                        v = DateTime(v)
+                    except:
+                        pass
         elif isinstance(v, (dict, list)):
             v = custom_decoder(v)
         result.append((k, v))

@@ -11,16 +11,18 @@ import base64
 from zope.app.component.hooks import getSite
 from persistent.list import PersistentList
 
-
 _skipped_fields = ['id']
 
 
 def _convert(value):
     if isinstance(value, BlobWrapper) or isinstance(value, Image):
         try:
-            return json._filedata_marker + base64.b64encode(value.data)
+            data = str(value.data)
         except TypeError:
-            return json._filedata_marker + base64.b64encode(value.data.data)
+            data = str(value.data.data)
+        if (len(data) / 1024 / 1024) > 20:
+            return json._filedata_marker
+        return json._filedata_marker + base64.b64encode(data)
     elif isinstance(value, BaseUnit):
         return value.getRaw()
     elif hasattr(value, 'UID'):

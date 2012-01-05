@@ -22,17 +22,32 @@ def getMigratorFromRequest(request):
     site = getSite()
     if migrator._type in ['object', 'folder', '_']:
         path = request.get('path')
-        context = site.unrestrictedTraverse(str(path), None)
+        context = safeTraverse(site, str(path), None)
         if not context:
             redirect_storage = getUtility(IRedirectionStorage)
             site_path = '/'.join(site.getPhysicalPath())
             newpath = redirect_storage.get(
                 site_path + '/' + path.lstrip('/'), None)
             if newpath:
-                context = site.unrestrictedTraverse(newpath, None)
+                context = safeTraverse(site, newpath, None)
             if not context:
                 context = path
         migrator = migrator(site, context)
     else:
         migrator = migrator(site)
     return migrator
+
+
+def safeTraverse(context, path, default=None):
+    """
+    traverse through objects without picking
+    up views and other things that acquisition
+    picks up along the way
+    """
+    objectids = path.strip('/').split('/')
+    try:
+        for objid in objectids:
+            context = context[objid]
+    except KeyError:
+        return default
+    return context

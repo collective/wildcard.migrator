@@ -85,10 +85,6 @@ from zope.schema._bootstrapinterfaces import ConstraintNotSatisfied
 from wildcard.migrator.exceptions import MissingObjectException
 
 
-# XXX very weird way to hack this but it works for now...
-_already_raised = []
-
-
 def from_unicode(self, field, value):
     import zope.schema
     if IFromUnicode.providedBy(field) or isinstance(field, zope.schema.Bool):
@@ -99,9 +95,6 @@ def from_unicode(self, field, value):
         except ConstraintNotSatisfied:
             if type(field) == zope.schema.Choice and \
                     zope.schema.interfaces.ISource.providedBy(field.source):
-                if value in _already_raised:
-                    return value
-                _already_raised.append(value)
                 raise MissingObjectException(value)
             raise
     else:

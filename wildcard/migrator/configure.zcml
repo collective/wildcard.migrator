@@ -4,12 +4,4 @@
     xmlns:monkey="http://namespaces.plone.org/monkey"
     i18n_domain="wildcard.migrator">
 
-    <monkey:patch
-        description=""
-        class="plone.app.portlets.exportimport.portlets.PropertyPortletAssignmentExportImportHandler"
-        original="from_unicode"
-        replacement=".monkey.from_unicode"
-    />
-
-
 </configure>

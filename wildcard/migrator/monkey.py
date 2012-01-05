@@ -78,24 +78,3 @@ def importRolemap( context ):
                 pass  # do not bother importing invalid ones.
 
     logger.info('Role / permission map imported.')
-
-
-from zope.schema.interfaces import IFromUnicode
-from zope.schema._bootstrapinterfaces import ConstraintNotSatisfied
-from wildcard.migrator.exceptions import MissingObjectException
-
-
-def from_unicode(self, field, value):
-    import zope.schema
-    if IFromUnicode.providedBy(field) or isinstance(field, zope.schema.Bool):
-        if type(field) == zope.schema.Int and len(value) == 0:
-            return None
-        try:
-            return field.fromUnicode(value)
-        except ConstraintNotSatisfied:
-            if type(field) == zope.schema.Choice and \
-                    zope.schema.interfaces.ISource.providedBy(field.source):
-                raise MissingObjectException(value)
-            raise
-    else:
-        return self.field_typecast(field, value)

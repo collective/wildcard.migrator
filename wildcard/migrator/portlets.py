@@ -41,6 +41,8 @@ from zope.schema.interfaces import ICollection
 from zope.schema._bootstrapinterfaces import ConstraintNotSatisfied
 from zope.schema import Choice
 from zope.schema.interfaces import ISource
+from wildcard.migrator.exceptions import MissingObjectException
+from zope.schema.interfaces import IFromUnicode
 
 
 def dummyGetId():
@@ -67,6 +69,30 @@ if HAS_BLACKLIST:
 
 class PropertyPortletAssignmentExportImportHandler(
         BasePropertyPortletAssignmentExportImportHandler):
+
+    def __init__(self, assignment):
+        self.assignment = assignment
+        self._already_raised = []
+
+    def from_unicode(self, field, value):
+        import zope.schema
+        if IFromUnicode.providedBy(field) or \
+                    isinstance(field, zope.schema.Bool):
+            if type(field) == zope.schema.Int and len(value) == 0:
+                return None
+            try:
+                return field.fromUnicode(value)
+            except ConstraintNotSatisfied:
+                if type(field) == Choice and \
+                        ISource.providedBy(field.source):
+                    if value in self._already_raised:
+                        return value
+                    else:
+                        self._already_raised.append(value)
+                        raise MissingObjectException(value)
+                raise
+        else:
+            return self.field_typecast(field, value)
 
     def import_node(self, interface, child):
         """Import a single <property /> node

@@ -1,7 +1,7 @@
 from Products.CMFCore.utils import getToolByName
 from wildcard.migrator import addMigrator
 from wildcard.migrator import BaseMigrator
-from wildcard.migrator.archetypes import FieldMigrator
+from wildcard.migrator.archetypes import FieldsMigrator
 from wildcard.migrator.properties import ObjectPropertiesMigrator
 from wildcard.migrator.workflow import WorkflowStateMigrator
 from wildcard.migrator.workflow import WorkflowHistoryMigrator
@@ -34,6 +34,7 @@ except:
 from BTrees.OOBTree import OOBTree
 from plone.app.redirector.interfaces import IRedirectionStorage
 from zope.component import queryUtility
+from ZODB.POSException import POSKeyError
 
 
 resolveuid_re = re.compile('resolveuid/([a-zA-Z0-9\-]*)\"')
@@ -64,8 +65,18 @@ class FolderContentsMigrator(BaseMigrator):
     _type = 'folder'
 
     def get(self):
-        return [{'id': o.getId(), 'portal_type': getPT(o)} for o in
-                    self.obj.objectValues() if IBaseObject.providedBy(o)]
+        values = []
+        for id in self.obj.objectIds():
+            try:
+                o = self.obj[id]
+                if IBaseObject.providedBy(o):
+                    values.append({
+                        'id': id,
+                        'portal_type': getPT(o)
+                    })
+            except KeyError:
+                pass
+        return values
 
     def set(self, values):
         for data in values:
@@ -170,12 +181,15 @@ class VersionsMigrator(BaseMigrator):
             return []
         length = history.getLength(countPurged=False)
         for i in xrange(length - 1, -1, -1):
-            version = repo_tool.retrieve(obj, i)
-            versions.append({
-                'object': ContentObjectMigrator._get(version.object,
-                                                    add_versions=False),
-                'sys_metadata': version.sys_metadata
-            })
+            try:
+                version = repo_tool.retrieve(obj, i)
+                versions.append({
+                    'object': ContentObjectMigrator._get(version.object,
+                                                        add_versions=False),
+                    'sys_metadata': version.sys_metadata
+                })
+            except POSKeyError:
+                pass
         return versions
 
     @classmethod
@@ -451,7 +465,7 @@ class ContentObjectMigrator(BaseMigrator):
     def _get(kls, obj, add_versions=True):
         pt = aq_base(obj).portal_type
         data = {
-            'fieldvalues': FieldMigrator._get(obj),
+            'fieldvalues': FieldsMigrator._get(obj),
             'id': obj.getId(),
             'portal_type': _portal_type_conversions.get(pt, pt),
             'properties': ObjectPropertiesMigrator._get(obj),
@@ -472,7 +486,7 @@ class ContentObjectMigrator(BaseMigrator):
 
     @classmethod
     def _set(kls, obj, value):
-        FieldMigrator._set(obj, value.get('fieldvalues', []))
+        FieldsMigrator._set(obj, value.get('fieldvalues', []))
         ObjectPropertiesMigrator._set(obj, value.get('properties', []))
         WorkflowStateMigrator._set(obj, value.get('workflow', ''))
         WorkflowHistoryMigrator._set(obj, value.get('workflow_history', []))

@@ -1,3 +1,4 @@
+from wildcard.migrator import addMigrator
 from wildcard.migrator import BaseMigrator
 from plone.app.blob.field import BlobWrapper
 from wildcard.migrator import mjson as json
@@ -14,15 +15,9 @@ from persistent.list import PersistentList
 _skipped_fields = ['id']
 
 
-def _convert(value):
+def _convert(value, safe=True):
     if isinstance(value, BlobWrapper) or isinstance(value, Image):
-        try:
-            data = str(value.data)
-        except TypeError:
-            data = str(value.data.data)
-        if (len(data) / 1024 / 1024) > 20:
-            return json._filedata_marker
-        return json._filedata_marker + base64.b64encode(data)
+        return json._filedata_marker + json._deferred_marker
     elif isinstance(value, BaseUnit):
         return value.getRaw()
     elif hasattr(value, 'UID'):
@@ -38,7 +33,9 @@ def _convert(value):
     return value
 
 
-class FieldMigrator(BaseMigrator):
+class FieldsMigrator(BaseMigrator):
+    title = 'Fields'
+    _type = 'object'
 
     @classmethod
     def _get(kls, obj):
@@ -46,15 +43,7 @@ class FieldMigrator(BaseMigrator):
         for field in obj.Schema().fields():
             if field.__name__ in _skipped_fields:
                 continue
-            if getattr(field, 'default_output_type', None) == \
-                                                    'text/x-html-safe':
-                extras = {'mimetype': 'text/html', 'field': 'text'}
-            else:
-                extras = {}
-            fields[field.__name__] = {
-                'value': _convert(field.get(obj, raw=True)),
-                'extras': extras
-            }
+            fields[field.__name__] = FieldMigrator._get(obj, field.__name__)
         return fields
 
     @classmethod
@@ -62,7 +51,43 @@ class FieldMigrator(BaseMigrator):
         for name, value in values.items():
             if name in _skipped_fields:
                 continue
-            field = obj.getField(name)
-            if not field:
-                continue
-            field.set(obj, value['value'], **value['extras'])
+            value = FieldMigrator._set(obj, value, name)
+addMigrator(FieldsMigrator)
+
+
+class FieldMigrator(BaseMigrator):
+    title = 'Field'
+    _type = 'object'
+
+    def __init__(self, site, obj, fieldname, safe=True):
+        self.site = site
+        self.obj = obj
+        self.fieldname = fieldname
+        self.safe = safe
+
+    def get(self):
+        return self._get(self.obj, self.fieldname, self.safe)
+
+    @classmethod
+    def _get(kls, obj, fieldname, safe=True):
+        field = obj.getField(fieldname)
+        if getattr(field, 'default_output_type', None) == \
+                                                    'text/x-html-safe':
+            extras = {'mimetype': 'text/html', 'field': 'text'}
+        else:
+            extras = {}
+        return {
+            'value': _convert(field.get(obj, raw=True), safe),
+            'extras': extras
+        }
+
+    def set(self, value):
+        self._set(self.obj, value, self.fieldname)
+
+    @classmethod
+    def _set(kls, obj, value, fieldname):
+        field = obj.getField(fieldname)
+        if not field or value['value'] == json.Deferred:
+            return
+        field.set(obj, value['value'], **value['extras'])
+addMigrator(FieldMigrator)

@@ -1,6 +1,7 @@
 from plone.app.redirector.interfaces import IRedirectionStorage
 from zope.component import getUtility
 from zope.app.component.hooks import getSite
+from wildcard.migrator import mjson as json
 
 
 def convertListOfDicts(tup):
@@ -20,6 +21,11 @@ def getMigratorFromRequest(request):
 
     migrator = getMigrator(migrator)
     site = getSite()
+    args = request.get('args')
+    if args:
+        args = json.loads(args)
+    else:
+        args = {}
     if migrator._type in ['object', 'folder', '_']:
         path = request.get('path')
         context = safeTraverse(site, str(path), None)
@@ -32,9 +38,9 @@ def getMigratorFromRequest(request):
                 context = safeTraverse(site, newpath, None)
             if not context:
                 context = path
-        migrator = migrator(site, context)
+        migrator = migrator(site, context, **args)
     else:
-        migrator = migrator(site)
+        migrator = migrator(site, None, **args)
     return migrator
 
 

@@ -58,9 +58,10 @@ class WorkflowHistoryMigrator(BaseMigrator):
 
     @classmethod
     def _get(kls, obj):
-        return obj.workflow_history
+        return getattr(obj, 'workflow_history', None)
 
     @classmethod
     def _set(kls, obj, data):
-        obj.workflow_history = PersistentDict(data)
+        if data:
+            obj.workflow_history = PersistentDict(data)
 addMigrator(WorkflowHistoryMigrator)

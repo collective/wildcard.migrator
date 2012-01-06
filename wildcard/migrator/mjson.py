@@ -16,9 +16,14 @@ from BTrees.OOBTree import OOBTree
 import re
 
 _filedata_marker = 'filedata://'
+_deferred_marker = 'deferred://'
 _uid_marker = 'uid://'
 _uid_separator = '||||'
 _date_re = re.compile('^[0-9]{4}\-[0-9]{2}\-[0-9]{2}.*$')
+
+
+class Deferred:
+    pass
 
 
 def customhandler(obj):
@@ -49,7 +54,10 @@ def custom_decoder(d):
     for k, v in pairs:
         if isinstance(v, basestring):
             if v.startswith(_filedata_marker):
-                v = StringIO(base64.b64decode(v[len(_filedata_marker):]))
+                if v == _filedata_marker + _deferred_marker:
+                    v = Deferred
+                else:
+                    v = StringIO(base64.b64decode(v[len(_filedata_marker):]))
             else:
                 if _date_re.match(v):
                     try:

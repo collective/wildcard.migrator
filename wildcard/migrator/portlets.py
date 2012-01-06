@@ -43,6 +43,7 @@ from zope.schema import Choice
 from zope.schema.interfaces import ISource
 from wildcard.migrator.exceptions import MissingObjectException
 from zope.schema.interfaces import IFromUnicode
+from zope.annotation.interfaces import IAnnotations
 
 
 def dummyGetId():
@@ -72,7 +73,12 @@ class PropertyPortletAssignmentExportImportHandler(
 
     def __init__(self, assignment):
         self.assignment = assignment
-        self._already_raised = []
+        req = getSite().REQUEST
+        annotations = IAnnotations(req)
+        self._already_raised = annotations.get('_already_raised', None)
+        if self._already_raised is None:
+            self._already_raised = []
+            annotations['_already_raised'] = self._already_raised
 
     def from_unicode(self, field, value):
         import zope.schema

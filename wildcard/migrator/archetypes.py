@@ -8,7 +8,8 @@ try:
 except:
     from Products.Archetypes.interfaces.base import IBaseObject
 from Products.Archetypes.BaseUnit import BaseUnit
-import base64
+from OFS.Image import File
+from OFS.Image import Image as OFSImage
 from zope.app.component.hooks import getSite
 from persistent.list import PersistentList
 
@@ -16,7 +17,8 @@ _skipped_fields = ['id']
 
 
 def _convert(value, safe=True):
-    if isinstance(value, BlobWrapper) or isinstance(value, Image):
+    if isinstance(value, BlobWrapper) or isinstance(value, Image) or \
+            isinstance(value, File) or isinstance(value, OFSImage):
         return json._filedata_marker + json._deferred_marker
     elif isinstance(value, BaseUnit):
         return value.getRaw()
@@ -89,5 +91,12 @@ class FieldMigrator(BaseMigrator):
         field = obj.getField(fieldname)
         if not field or value['value'] == json.Deferred:
             return
-        field.set(obj, value['value'], **value['extras'])
+        val = value['value']
+        try:
+            field.set(obj, val, **value['extras'])
+        except AttributeError:
+            # ignore errors on setting empty values. Otherwise, raise
+            if val is not None and val != False:
+                raise
+
 addMigrator(FieldMigrator)

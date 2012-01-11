@@ -72,7 +72,8 @@ class FolderContentsMigrator(BaseMigrator):
                 if IBaseObject.providedBy(o):
                     values.append({
                         'id': id,
-                        'portal_type': getPT(o)
+                        'portal_type': getPT(o),
+                        'modified': o.ModificationDate()
                     })
             except KeyError:
                 pass
@@ -457,12 +458,45 @@ class RedirectorMigrator(BaseMigrator):
 addMigrator(RedirectorMigrator)
 
 
+class AttributeMissing:
+    pass
+
+
+class AttributeMigrator(BaseMigrator):
+    title = 'Attributes'
+    _type = 'object'
+
+    _known_attributes_to_copy = [
+        '_social_enabled',
+        '_adapter_uid'
+    ]
+
+    @classmethod
+    def _get(kls, obj, attributes=[]):
+        attributes.extend(kls._known_attributes_to_copy)
+        results = {}
+        for attribute in attributes:
+            val = getattr(obj, attribute, AttributeMissing)
+            if val is not AttributeMissing:
+                results[attribute] = val
+        return results
+
+    @classmethod
+    def _set(kls, obj, values):
+        for attribute, value in values.items():
+            setattr(obj, attribute, value)
+
+
 class ContentObjectMigrator(BaseMigrator):
     title = "Migrate Content Item"
     _type = 'object'
 
+    def __init__(self, site, obj=None, attributes=[]):
+        super(ContentObjectMigrator, self).__init__(site, obj)
+        self.attributes = attributes
+
     @classmethod
-    def _get(kls, obj, add_versions=True):
+    def _get(kls, obj, add_versions=True, attributes=[]):
         pt = aq_base(obj).portal_type
         data = {
             'fieldvalues': FieldsMigrator._get(obj),
@@ -482,7 +516,11 @@ class ContentObjectMigrator(BaseMigrator):
             data['portlets'] = PortletsMigrator._get(obj)
             data['redirects'] = RedirectorMigrator._get(obj)
             data['uids'] = findUids(data)
+            data['attributes'] = AttributeMigrator._get(obj, attributes)
         return data
+
+    def get(self):
+        return self._get(self.obj, True, self.attributes)
 
     @classmethod
     def _set(kls, obj, value):
@@ -498,5 +536,6 @@ class ContentObjectMigrator(BaseMigrator):
         SyndicationMigrator._set(obj, value.get('syndication', {}))
         PortletsMigrator._set(obj, value.get('portlets', None))
         RedirectorMigrator._set(obj, value.get('redirects', []))
+        AttributeMigrator._set(obj, value.get('attributes', {}))
         obj._p_changed = 1
 addMigrator(ContentObjectMigrator)

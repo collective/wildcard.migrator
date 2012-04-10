@@ -410,7 +410,8 @@ class ContentTouchMigrator(BaseMigrator):
         return {
             'id': obj.getId(),
             'parents': getParentsData(obj),
-            'portal_type': _portal_type_conversions.get(pt, pt)
+            'portal_type': _portal_type_conversions.get(pt, pt),
+            'uid': obj.UID()
         }
 
     def set(self, data):
@@ -431,6 +432,38 @@ class ContentTouchMigrator(BaseMigrator):
             createObject(objparent, str(data['portal_type']), objid)
         return objparent[objid]
 addMigrator(ContentTouchMigrator)
+
+
+class MultiContentTouchMigrator(BaseMigrator):
+    """
+    Get information about content in order to
+    create stubs or "touch" the content.
+    """
+    title = "Multi Stub Migrator"
+    _type = "_"
+
+    def __init__(self, site, obj=None, totouch=[]):
+        super(MultiContentTouchMigrator, self).__init__(site, obj)
+        self.totouch = totouch
+
+    def get(self):
+        return self._get(self.site, self.totouch)
+
+    @classmethod
+    def _get(kls, site, totouch=[]):
+        results = []
+        for path, uid in totouch:
+            path = str(path)
+            obj = site.restrictedTraverse(path.lstrip('/'))
+            results.append(ContentTouchMigrator._get(obj))
+        return results
+
+    def set(self, data):
+        for group in data:
+            migr = ContentTouchMigrator(self.site)
+            obj = migr.set(group)
+            yield obj, group['uid']
+addMigrator(MultiContentTouchMigrator)
 
 
 class RedirectorMigrator(BaseMigrator):

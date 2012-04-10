@@ -30,7 +30,7 @@ def getMigratorFromRequest(request):
     else:
         args = {}
     if migrator._type in ['object', 'folder', '_']:
-        path = request.get('path')
+        path = request.get('path', '')
         context = safeTraverse(site, str(path), None)
         if not context:
             redirect_storage = getUtility(IRedirectionStorage)

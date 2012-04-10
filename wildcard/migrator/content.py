@@ -39,7 +39,8 @@ from ZODB.POSException import POSKeyError
 
 resolveuid_re = re.compile('resolveuid/([a-zA-Z0-9\-]*)\"')
 _portal_type_conversions = {
-    'Large Plone Folder': 'Folder'
+    'Large Plone Folder': 'Folder',
+    'Blob': 'File'
 }
 
 

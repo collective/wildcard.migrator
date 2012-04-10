@@ -8,8 +8,6 @@ try:
 except:
     from Products.Archetypes.interfaces.base import IBaseObject
 from Products.Archetypes.BaseUnit import BaseUnit
-from OFS.Image import File
-from OFS.Image import Image as OFSImage
 from zope.app.component.hooks import getSite
 from persistent.list import PersistentList
 
@@ -17,9 +15,14 @@ _skipped_fields = ['id']
 
 
 def _convert(value, safe=True):
-    if isinstance(value, BlobWrapper) or isinstance(value, Image) or \
-            isinstance(value, File) or isinstance(value, OFSImage):
-        return json._filedata_marker + json._deferred_marker
+    if isinstance(value, BlobWrapper) or isinstance(value, Image):
+        try:
+            data = str(value.data)
+        except:
+            data = str(value.data.data)
+        if data:
+            return json._filedata_marker + json._deferred_marker
+        return json._filedata_marker  # if it's empty...
     elif isinstance(value, BaseUnit):
         return value.getRaw()
     elif hasattr(value, 'UID'):

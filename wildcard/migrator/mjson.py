@@ -7,14 +7,13 @@ from DateTime import DateTime
 from StringIO import StringIO
 import base64
 from persistent.dict import PersistentDict
-try:
-    from Persistence.mapping import PersistentMapping
-except:
-    from persistent.mapping import PersistentMapping
+from Persistence.mapping import PersistentMapping as PM1
+from persistent.mapping import PersistentMapping as PM2
 from persistent.list import PersistentList
 from BTrees.OOBTree import OOBTree
 import re
 from zope.dottedname.resolve import resolve
+from ZPublisher.HTTPRequest import record
 
 import OFS
 
@@ -36,32 +35,36 @@ class BaseTypeSerializer(object):
         return "%s.%s" % (kls.klass.__module__, kls.klass.__name__)
 
     @classmethod
-    def serialize(self, obj):
+    def serialize(kls, obj):
         if hasattr(obj, 'aq_base'):
             obj = obj.aq_base
-        data = self._serialize(obj)
+        data = kls._serialize(obj)
         results = {
-            'type': self.getTypeName(),
+            'type': kls.getTypeName(),
             'data': data
         }
         return _type_marker + dumps(results)
 
     @classmethod
-    def _serialize(self, obj):
-        return self.toklass(obj)
+    def _serialize(kls, obj):
+        return kls.toklass(obj)
 
     @classmethod
-    def deserialize(self, data):
-        return self._deserialize(data)
+    def deserialize(kls, data):
+        return kls._deserialize(data)
 
     @classmethod
-    def _deserialize(self, data):
-        return self.klass(data)
+    def _deserialize(kls, data):
+        return kls.klass(data)
 
 
-class PersistentMappingSerializer(BaseTypeSerializer):
-    klass = PersistentMapping
+class PM1Serializer(BaseTypeSerializer):
+    klass = PM1
     toklass = dict
+
+
+class PM2Serializer(PM1Serializer):
+    klass = PM2
 
 
 class PersistentDictSerializer(BaseTypeSerializer):
@@ -88,7 +91,7 @@ class OFSFileSerializer(BaseTypeSerializer):
     klass = OFS.Image.File
 
     @classmethod
-    def _serialize(self, obj):
+    def _serialize(kls, obj):
         try:
             data = str(obj.data)
         except:
@@ -102,12 +105,12 @@ class OFSFileSerializer(BaseTypeSerializer):
         }
 
     @classmethod
-    def _deserialize(self, data):
+    def _deserialize(kls, data):
         file = base64.b64decode(data['data'])
         id = data['id']
         title = data['title']
         ct = data['content_type']
-        return self.klass(id, title, file, ct)
+        return kls.klass(id, title, file, ct)
 
 
 class OFSImageSerializer(OFSFileSerializer):
@@ -122,11 +125,11 @@ class DateTimeSerializer(BaseTypeSerializer):
         return 'DateTime.DateTime'
 
     @classmethod
-    def _serialize(self, obj):
+    def _serialize(kls, obj):
         return obj.ISO8601()
 
     @classmethod
-    def _deserialize(self, data):
+    def _deserialize(kls, data):
         return DateTime(data)
 
 
@@ -134,16 +137,29 @@ class datetimeSerializer(BaseTypeSerializer):
     klass = datetime
 
     @classmethod
-    def _serialize(self, obj):
+    def _serialize(kls, obj):
         return obj.isoformat()
 
     @classmethod
-    def _deserialize(self, data):
+    def _deserialize(kls, data):
         return datetime.strptime(data, '%Y-%m-%dT%H:%M:%S.%f')
 
 
+class recordSerializer(BaseTypeSerializer):
+    klass = record
+    toklass = dict
+
+    @classmethod
+    def _deserialize(kls, data):
+        rec = record()
+        for key, value in data.items():
+            setattr(rec, key, value)
+        return rec
+
+
 _serializers = {
-    PersistentMapping: PersistentMappingSerializer,
+    PM1: PM1Serializer,
+    PM2: PM2Serializer,
     PersistentDict: PersistentDictSerializer,
     OOBTree: OOBTreeSerializer,
     PersistentList: PersistentListSerializer,
@@ -151,7 +167,8 @@ _serializers = {
     OFS.Image.Image: OFSImageSerializer,
     OFS.Image.File: OFSFileSerializer,
     DateTime: DateTimeSerializer,
-    datetime: datetimeSerializer
+    datetime: datetimeSerializer,
+    record: recordSerializer
 }
 
 
@@ -160,6 +177,8 @@ class Deferred:
 
 
 def customhandler(obj):
+    if hasattr(obj, 'aq_base'):
+        obj = obj.aq_base
     _type = type(obj)
     if _type.__name__ == 'instance':
         _type = obj.__class__
@@ -186,7 +205,11 @@ def custom_decoder(d):
                 if v == _filedata_marker + _deferred_marker:
                     v = Deferred
                 else:
-                    v = StringIO(base64.b64decode(v[len(_filedata_marker):]))
+                    filedata = v[len(_filedata_marker):]
+                    if filedata:
+                        v = StringIO(base64.b64decode(filedata))
+                    else:
+                        v = ''
             elif v.startswith(_type_marker):
                 v = v[len(_type_marker):]
                 results = loads(v)

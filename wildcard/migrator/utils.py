@@ -24,6 +24,9 @@ def getMigratorFromRequest(request):
     args = request.get('args')
     if args:
         args = json.loads(args)
+        for key, val in args.items():
+            del args[key]
+            args[str(key)] = val
     else:
         args = {}
     if migrator._type in ['object', 'folder', '_']:

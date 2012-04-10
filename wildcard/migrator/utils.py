@@ -53,7 +53,7 @@ def safeTraverse(context, path, default=None):
     up views and other things that acquisition
     picks up along the way
     """
-    objectids = path.strip('/').split('/')
+    objectids = str(path).strip('/').split('/')
     try:
         for objid in objectids:
             context = context[objid]

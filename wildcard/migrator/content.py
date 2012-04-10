@@ -35,6 +35,7 @@ from BTrees.OOBTree import OOBTree
 from plone.app.redirector.interfaces import IRedirectionStorage
 from zope.component import queryUtility
 from ZODB.POSException import POSKeyError
+from wildcard.migrator.utils import safeTraverse
 
 
 resolveuid_re = re.compile('resolveuid/([a-zA-Z0-9\-]*)\"')
@@ -454,7 +455,7 @@ class MultiContentTouchMigrator(BaseMigrator):
         results = []
         for path, uid in totouch:
             path = str(path)
-            obj = site.restrictedTraverse(path.lstrip('/'))
+            obj = safeTraverse(site, path.lstrip('/'))
             results.append(ContentTouchMigrator._get(obj))
         return results
 
@@ -573,3 +574,37 @@ class ContentObjectMigrator(BaseMigrator):
         AttributeMigrator._set(obj, value.get('attributes', {}))
         obj._p_changed = 1
 addMigrator(ContentObjectMigrator)
+
+
+class MultiContentObjectMigrator(BaseMigrator):
+    """
+    Get information about content in order to
+    create stubs or "touch" the content.
+    """
+    title = "multi-Migrate Content Item"
+    _type = 'object'
+
+    def __init__(self, site, obj=None, paths=[], attributes=[]):
+        super(MultiContentObjectMigrator, self).__init__(site, obj)
+        self.attributes = attributes
+        self.paths = paths
+
+    def get(self):
+        return self._get(self.site, self.paths, self.attributes)
+
+    @classmethod
+    def _get(kls, site, paths=[], attributes=[]):
+        results = {}
+        for path in paths:
+            path = str(path).lstrip('/')
+            obj = safeTraverse(site, path)
+            results[path] = ContentObjectMigrator._get(obj,
+                attributes=attributes)
+        return results
+
+    def set(self, data):
+        raise Exception("do not use...")
+
+    def _set(kls, obj, data):
+        raise Exception("do not use...")
+addMigrator(MultiContentObjectMigrator)

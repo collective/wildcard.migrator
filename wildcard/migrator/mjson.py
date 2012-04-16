@@ -14,6 +14,8 @@ from BTrees.OOBTree import OOBTree
 import re
 from zope.dottedname.resolve import resolve
 from ZPublisher.HTTPRequest import record
+from ZODB.blob import Blob
+from plone.app.blob.utils import openBlob
 
 import OFS
 
@@ -113,6 +115,26 @@ class OFSFileSerializer(BaseTypeSerializer):
         return kls.klass(id, title, file, ct)
 
 
+class BlobSerializer(BaseTypeSerializer):
+    klass = Blob
+
+    @classmethod
+    def _serialize(kls, obj):
+        blobfi = openBlob(obj)
+        data = blobfi.read()
+        blobfi.close()
+        return {'data': base64.b64encode(data)}
+
+    @classmethod
+    def _deserialize(kls, data):
+        blob = Blob()
+        bfile = blob.open('w')
+        data = base64.b64decode(data['data'])
+        bfile.write(data)
+        bfile.close()
+        return blob
+
+
 class OFSImageSerializer(OFSFileSerializer):
     klass = OFS.Image.Image
 
@@ -168,7 +190,8 @@ _serializers = {
     OFS.Image.File: OFSFileSerializer,
     DateTime: DateTimeSerializer,
     datetime: datetimeSerializer,
-    record: recordSerializer
+    record: recordSerializer,
+    Blob: BlobSerializer
 }
 
 

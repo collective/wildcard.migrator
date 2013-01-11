@@ -36,7 +36,7 @@ class ObjectPropertiesMigrator(BaseMigrator):
             else:
                 existing_structure[id].update(struct)
 
-        obj._properties = existing_structure.values()
+        obj._properties = tuple(existing_structure.values())
 
         for key, value in values:
             if existing_structure[key]['type'] == 'string':

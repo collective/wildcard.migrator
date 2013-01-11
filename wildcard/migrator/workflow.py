@@ -29,7 +29,11 @@ class WorkflowStateMigrator(BaseMigrator):
     def _set(kls, obj, status):
         if status:
             currentstatus = getWorkflowStatus(obj)
-            old_state = currentstatus['review_state']
+            try:
+                old_state = currentstatus['review_state']
+            except:
+                # no workflow
+                return
             new_state = status and status['review_state'] or None
             if status and old_state != new_state:
                 portal_workflow = getToolByName(obj, 'portal_workflow')

@@ -47,9 +47,14 @@ class BaseTypeSerializer(object):
         }
         return _type_marker + dumps(results)
 
+
     @classmethod
     def _serialize(kls, obj):
-        return kls.toklass(obj)
+        try:
+            return kls.toklass(obj)
+        except:
+            import pdb; pdb.set_trace()
+            raise
 
     @classmethod
     def deserialize(kls, data):
@@ -72,6 +77,24 @@ class PM2Serializer(PM1Serializer):
 class PersistentDictSerializer(BaseTypeSerializer):
     klass = PersistentDict
     toklass = dict
+
+    @classmethod
+    def serialize(kls, obj):
+        if hasattr(obj, 'aq_base'):
+            obj = obj.aq_base
+        data = kls._serialize(obj)
+        results = {
+            'type': kls.getTypeName(),
+            'data': data
+        }
+        try:
+            return _type_marker + dumps(results)
+        except TypeError:
+            # check for bad keys...
+            for key in data.keys():
+                if type(key) == tuple:
+                    del data[key]
+            return _type_marker + dumps(results)
 
 
 class OOBTreeSerializer(BaseTypeSerializer):
